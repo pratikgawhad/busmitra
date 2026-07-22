@@ -8,31 +8,41 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#dc2626">
+    <style>
+        /* home-bg.jpg इमेजसाठी custom background gradient style */
+        .bg-hero {
+            background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), 
+                              url('home-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 pb-12">
+<body class="bg-slate-900 min-h-screen p-4 pb-12 bg-hero text-slate-100">
 
     <div class="max-w-md mx-auto space-y-6">
 
         <!-- Top Header & Admin Access -->
         <div class="flex items-center justify-between pt-2">
             <div class="flex items-center gap-2">
-                <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-red-600/30">
                     <i class="fas fa-bus text-sm"></i>
                 </div>
-                <span class="font-black text-xl text-slate-800 tracking-wide">BusMitra</span>
+                <span class="font-black text-xl text-white tracking-wide">BusMitra</span>
             </div>
             <div class="flex items-center gap-2">
-                <a href="driver.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-bold shadow-sm active:scale-90 transition-all flex items-center gap-1">
-                    <i class="fas fa-steering-wheel text-red-500"></i> Driver
+                <a href="driver.html" class="p-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white text-xs font-bold shadow-sm active:scale-90 transition-all flex items-center gap-1.5">
+                    <i class="fas fa-steering-wheel text-red-400"></i> Driver
                 </a>
-                <a href="admin.html" class="p-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm active:scale-90 transition-all">
+                <a href="admin.html" class="p-2.5 bg-slate-900/80 border border-white/10 text-white rounded-xl text-xs font-bold shadow-sm active:scale-90 transition-all">
                     <i class="fas fa-lock"></i>
                 </a>
             </div>
         </div>
 
         <!-- Search Form Card -->
-        <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200/80 space-y-5">
+        <div class="bg-white p-6 rounded-[32px] shadow-2xl border border-slate-100 space-y-5 text-slate-800">
             <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
                 <i class="fas fa-route text-red-600"></i> बस शोधा (Search Bus)
             </h2>
@@ -89,7 +99,7 @@
             </datalist>
 
             <!-- Search Button -->
-            <button onclick="searchBuses()" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-red-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <button onclick="searchBuses()" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 <i class="fas fa-magnifying-glass"></i>
                 <span>बसेस शोधा</span>
             </button>
@@ -97,15 +107,15 @@
 
         <!-- Popular Routes Shortcuts -->
         <div class="space-y-3">
-            <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">प्रसिद्ध मार्ग (Popular Routes)</h3>
+            <h3 class="text-xs font-black text-slate-300/80 uppercase tracking-wider">प्रसिद्ध मार्ग (Popular Routes)</h3>
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="quickRoute('Pune', 'Malkapur')" class="p-3 bg-white border border-slate-200/80 rounded-2xl text-left active:scale-95 transition-all shadow-sm">
-                    <p class="text-xs font-black text-slate-800">Pune ➔ Malkapur</p>
-                    <p class="text-[10px] text-slate-400 font-bold mt-0.5">पुणे ते मलकापूर</p>
+                <button onclick="quickRoute('Pune', 'Malkapur')" class="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-left active:scale-95 transition-all shadow-sm">
+                    <p class="text-xs font-black text-white">Pune ➔ Malkapur</p>
+                    <p class="text-[10px] text-slate-300 font-bold mt-0.5">पुणे ते मलकापूर</p>
                 </button>
-                <button onclick="quickRoute('Mumbai', 'Pune')" class="p-3 bg-white border border-slate-200/80 rounded-2xl text-left active:scale-95 transition-all shadow-sm">
-                    <p class="text-xs font-black text-slate-800">Mumbai ➔ Pune</p>
-                    <p class="text-[10px] text-slate-400 font-bold mt-0.5">मुंबई ते पुणे</p>
+                <button onclick="quickRoute('Mumbai', 'Pune')" class="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-left active:scale-95 transition-all shadow-sm">
+                    <p class="text-xs font-black text-white">Mumbai ➔ Pune</p>
+                    <p class="text-[10px] text-slate-300 font-bold mt-0.5">मुंबई ते पुणे</p>
                 </button>
             </div>
         </div>
