@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusMitra - MSRTC Live Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#dc2626">
+</head>
+<body class="bg-red-600 h-screen w-full flex flex-col justify-between items-center p-6 text-white text-center select-none overflow-hidden">
+
+    <!-- Top Spacer -->
+    <div></div>
+
+    <!-- Main Hero Branding -->
+    <div class="space-y-6 max-w-xs animate-pulse">
+        <div class="w-28 h-28 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 flex items-center justify-center mx-auto shadow-2xl">
+            <i class="fas fa-bus text-5xl text-white"></i>
+        </div>
+        <div class="space-y-2">
+            <h1 class="text-4xl font-black tracking-wider">BusMitra</h1>
+            <p class="text-xs font-bold text-red-100 tracking-wide">महाराष्ट्र एसटी बस लाईव्ह ट्रॅकर</p>
+        </div>
+    </div>
+
+    <!-- Bottom Call To Action -->
+    <div class="w-full max-w-xs space-y-4">
+        <button onclick="window.location.href='home.html'" class="w-full py-4 bg-white text-red-600 rounded-2xl font-black text-base shadow-xl hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2">
+            <span>प्रवास सुरू करा</span>
+            <i class="fas fa-arrow-right"></i>
+        </button>
+        <p class="text-[11px] font-bold text-red-200">
+            Real-time GPS • Simple • Scalable MVP
+        </p>
+    </div>
+
+    <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

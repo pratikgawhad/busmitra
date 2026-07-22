@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Results - BusMitra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#dc2626">
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <!-- Header & Search Summary -->
+    <div class="bg-red-600 text-white p-5 rounded-b-[32px] shadow-lg sticky top-0 z-50">
+        <div class="flex items-center justify-between max-w-md mx-auto">
+            <button onclick="window.location.href='home.html'" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center active:scale-90 transition-all">
+                <i class="fas fa-arrow-left text-lg"></i>
+            </button>
+            <div class="text-center">
+                <h1 id="routeHeader" class="font-black text-lg tracking-wide">शोधत आहे...</h1>
+                <p id="subHeader" class="text-xs text-red-100 font-bold">उपलब्ध बसेसची यादी</p>
+            </div>
+            <div class="w-10"></div> <!-- Placeholder for balance -->
+        </div>
+    </div>
+
+    <!-- Main Results Section -->
+    <div class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12 space-y-3">
+            <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-sm font-bold text-slate-500">बसेस शोधत आहोत, कृपया थांबा...</p>
+        </div>
+
+        <!-- Bus Cards Container -->
+        <div id="busList" class="space-y-4 hidden"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-3">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fas fa-bus-slash"></i>
+            </div>
+            <h2 class="font-extrabold text-slate-800 text-lg">कोणतीही बस सापडली नाही</h2>
+            <p class="text-xs text-slate-500 font-medium">निवडलेल्या मार्गावर सध्या कोणतीही बस उपलब्ध नाही. कृपया वेगळा मार्ग शोधून पहा.</p>
+            <button onclick="window.location.href='home.html'" class="mt-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all">
+                पुन्हा शोधा
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ogdzoewuvnwnywqueijl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nZHpvZXd1dm53bnl3cXVlaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NDY3NjMsImV4cCI6MjEwMDEyMjc2M30.q11SVL1BWJ72k4M-ujp3wPqP6s369RQTnjjD8vcZNNU';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Get Search Parameters from URL
+        const params = new URLSearchParams(window.location.search);
+        const fromCity = params.get('from') || '';
+        const toCity = params.get('to') || '';
+
+        // Display Search Cities in Header
+        document.getElementById('routeHeader').innerText = `${fromCity} ➔ ${toCity}`;
+
+        async function fetchBusResults() {
+            const loading = document.getElementById('loadingState');
+            const busList = document.getElementById('busList');
+            const emptyState = document.getElementById('emptyState');
+
+            // Fetch buses matching case-insensitive search
+            const { data: buses, error } = await _supabase
+                .from('buses')
+                .select('*')
+                .ilike('from_city', `%${fromCity}%`)
+                .ilike('to_city', `%${toCity}%`);
+
+            loading.classList.add('hidden');
+
+            if (error || !buses || buses.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('subHeader').innerText = `एकूण ${buses.length} बसेस सापडल्या`;
+            busList.classList.remove('hidden');
+
+            busList.innerHTML = buses.map(bus => {
+                // WhatsApp Share Text
+                const shareText = encodeURIComponent(
+                    `🚌 *BusMitra - एसटी बस माहिती*\n\n` +
+                    `🚩 *मार्ग:* ${bus.from_city} ➔ ${bus.to_city}\n` +
+                    `🚌 *बस क्र:* ${bus.bus_number} (${bus.bus_type || 'साधी एसटी'})\n` +
+                    `⏰ *वेळ:* ${bus.departure_time} - ${bus.arrival_time}\n` +
+                    `🎟️ *भाडे:* ₹${bus.ticket_price}\n\n` +
+                    `📍 *बस लाईव्ह ट्रॅक करण्यासाठी लिंक:* \n` +
+                    `https://busmitra.app/tracking.html?busNumber=${bus.bus_number}`
+                );
+
+                return `
+                    <div class="bg-white rounded-[28px] overflow-hidden shadow-sm border border-slate-200/60 p-5 space-y-4">
+                        <!-- Bus Type & Price Header -->
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800">${bus.bus_type || 'साधी एसटी'}</h3>
+                                <span class="inline-block mt-1 px-2.5 py-0.5 bg-red-50 text-red-600 text-[11px] font-extrabold rounded-md uppercase border border-red-100">
+                                    ${bus.bus_number}
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-black text-red-600">₹${bus.ticket_price}</p>
+                            </div>
+                        </div>
+
+                        <!-- Route Timeline -->
+                        <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">${bus.from_city}</p>
+                                <p class="text-slate-800 font-black text-base mt-0.5">${bus.departure_time}</p>
+                            </div>
+                            <div class="flex flex-col items-center justify-center border-x border-slate-200">
+                                <i class="fas fa-bus text-red-500 text-sm mb-0.5"></i>
+                                <p class="text-[9px] text-emerald-600 font-extrabold uppercase tracking-wide">वेळेवर</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">${bus.to_city}</p>
+                                <p class="text-slate-800 font-black text-base mt-0.5">${bus.arrival_time}</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons: Track & Share -->
+                        <div class="grid grid-cols-5 gap-2 pt-1">
+                            <a href="tracking.html?busNumber=${encodeURIComponent(bus.bus_number)}&type=${encodeURIComponent(bus.bus_type || 'साधी एसटी')}&from=${encodeURIComponent(bus.from_city)}&to=${encodeURIComponent(bus.to_city)}&dept=${encodeURIComponent(bus.departure_time)}&arr=${encodeURIComponent(bus.arrival_time)}&price=${bus.ticket_price}" 
+                               class="col-span-4 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-center text-xs tracking-wide shadow-md shadow-red-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-location-crosshairs text-sm"></i> बस लाईव्ह ट्रॅक करा
+                            </a>
+
+                            <a href="https://api.whatsapp.com/send?text=${shareText}" target="_blank"
+                               class="col-span-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-center text-base shadow-md shadow-emerald-900/10 active:scale-90 transition-all flex items-center justify-center">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        fetchBusResults();
+    </script>
+</body>
+</html>

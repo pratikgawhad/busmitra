@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusMitra - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 p-4 min-h-screen">
+
+    <!-- 🔐 1. PIN LOCK MODAL SCREEN -->
+    <div id="pinModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col justify-center items-center z-50 p-4">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl max-w-xs w-full text-center space-y-4 border border-slate-100">
+            <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <h2 class="font-black text-slate-800 text-lg">Admin Login</h2>
+                <p class="text-xs text-slate-500 font-bold mt-1">अ‍ॅडमिन ४-अंकी PIN प्रविष्ट करा</p>
+            </div>
+            <div>
+                <input type="password" id="adminPinInput" maxlength="4" placeholder="••••" class="w-full text-center text-2xl font-black tracking-widest p-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-red-500">
+            </div>
+            <button onclick="verifyAdminPin()" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-md shadow-red-900/20">
+                Unlock Console
+            </button>
+            <p id="pinError" class="text-xs text-red-500 font-bold hidden">चुकलेला PIN! पुन्हा प्रयत्न करा.</p>
+        </div>
+    </div>
+
+    <!-- 📌 2. MAIN ADMIN CONTENT (Initially Hidden) -->
+    <div id="adminContent" class="hidden max-w-md mx-auto space-y-6 pt-4">
+        <!-- Header -->
+        <div class="bg-red-600 text-white p-5 rounded-2xl shadow-md text-center">
+            <h1 class="text-xl font-black tracking-wide">BusMitra Admin</h1>
+            <p class="text-xs font-bold text-red-100">महाराष्ट्र एसटी बस व्यवस्थापन (मोबाईल)</p>
+        </div>
+
+        <!-- Form: Add New Bus -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fas fa-plus-circle text-red-600"></i> नवीन बस जोडा (Add Bus)
+            </h2>
+
+            <div class="space-y-3">
+                <input type="text" id="busNum" placeholder="बस नंबर (उदा. MH-20-BL-0494)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:outline-none focus:border-red-500">
+                
+                <select id="busType" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700">
+                    <option value="साधी एसटी (Express)">साधी एसटी (Express)</option>
+                    <option value="एशियाड (निमआराम)">एशियाड (निमआराम)</option>
+                    <option value="शिवनेरी (A/C)">शिवनेरी (A/C)</option>
+                </select>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="fromCity" placeholder="कुठून (From) उदा. Pune" class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+                    <input type="text" id="toCity" placeholder="कुठे (To) उदा. Malkapur" class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="deptTime" placeholder="सुटण्याची वेळ (08:00 AM)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+                    <input type="text" id="arrTime" placeholder="पोहोचण्याची वेळ (01:00 PM)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+                </div>
+
+                <input type="number" id="price" placeholder="तिकीट दर (₹)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm">
+
+                <button onclick="addBusToDatabase()" class="w-full py-3.5 bg-red-600 text-white rounded-xl font-bold active:scale-95 transition-all shadow-md shadow-red-900/20">
+                    बस सेव्ह करा (Save Bus)
+                </button>
+            </div>
+        </div>
+
+        <!-- Bus List -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="font-bold text-slate-800 text-base mb-3">उपलब्ध बसेसची यादी</h2>
+            <div id="adminBusList" class="space-y-3 text-sm text-slate-500 text-center">
+                लोड होत आहे...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PIN = "1234"; // 🔑 तुझा पासवर्ड इथे बदलू शकतोस
+
+        function verifyAdminPin() {
+            const input = document.getElementById('adminPinInput').value;
+            const err = document.getElementById('pinError');
+            if (input === ADMIN_PIN) {
+                document.getElementById('pinModal').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                loadBuses();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        const SUPABASE_URL = 'https://ogdzoewuvnwnywqueijl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nZHpvZXd1dm53bnl3cXVlaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NDY3NjMsImV4cCI6MjEwMDEyMjc2M30.q11SVL1BWJ72k4M-ujp3wPqP6s369RQTnjjD8vcZNNU';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function addBusToDatabase() {
+            const busNumber = document.getElementById('busNum').value;
+            const busType = document.getElementById('busType').value;
+            const fromCity = document.getElementById('fromCity').value;
+            const toCity = document.getElementById('toCity').value;
+            const deptTime = document.getElementById('deptTime').value;
+            const arrTime = document.getElementById('arrTime').value;
+            const price = document.getElementById('price').value;
+
+            if(!busNumber || !fromCity || !toCity) {
+                alert('कृपया सर्व माहिती भरा!');
+                return;
+            }
+
+            const { data, error } = await _supabase.from('buses').insert([
+                { bus_number: busNumber, bus_type: busType, from_city: fromCity, to_city: toCity, departure_time: deptTime, arrival_time: arrTime, ticket_price: price }
+            ]);
+
+            if (error) alert('एरर आला: ' + error.message);
+            else {
+                alert('बस यशस्वीरित्या जोडली गेली!');
+                location.reload();
+            }
+        }
+
+        async function loadBuses() {
+            const { data: buses, error } = await _supabase.from('buses').select('*');
+            const listDiv = document.getElementById('adminBusList');
+            if (error || !buses || buses.length === 0) {
+                listDiv.innerHTML = 'अजून कोणतीही बस जोडलेली नाही.';
+                return;
+            }
+            listDiv.innerHTML = buses.map(bus => `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-slate-800 text-xs">${bus.bus_number} (${bus.bus_type})</p>
+                        <p class="text-xs text-slate-600 font-medium">${bus.from_city} ➔ ${bus.to_city}</p>
+                        <p class="text-[11px] text-red-600 font-bold">${bus.departure_time} - ${bus.arrival_time} | ₹${bus.ticket_price}</p>
+                    </div>
+                    <button onclick="deleteBus(${bus.id})" class="text-red-500 p-2 text-sm"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteBus(id) {
+            if(confirm('ही बस डिलीट करायची आहे का?')) {
+                await _supabase.from('buses').delete().eq('id', id);
+                loadBuses();
+            }
+        }
+    </script>
+</body>
+</html>

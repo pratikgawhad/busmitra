@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusMitra - Driver Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-4 flex flex-col justify-between max-w-md mx-auto">
+
+    <!-- 🔐 1. DRIVER PIN LOCK MODAL SCREEN -->
+    <div id="pinModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-center items-center z-50 p-4">
+        <div class="bg-slate-800 p-6 rounded-3xl shadow-2xl max-w-xs w-full text-center space-y-4 border border-slate-700">
+            <div class="w-14 h-14 bg-red-600/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-red-500/30">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <div>
+                <h2 class="font-black text-white text-lg">Driver Console</h2>
+                <p class="text-xs text-slate-400 font-bold mt-1">ड्रायव्हर/कंडक्टर PIN एंटर करा</p>
+            </div>
+            <div>
+                <input type="password" id="driverPinInput" maxlength="4" placeholder="••••" class="w-full text-center text-2xl font-black tracking-widest p-3 bg-slate-900 border border-slate-700 rounded-2xl text-white focus:outline-none focus:border-red-500">
+            </div>
+            <button onclick="verifyDriverPin()" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg">
+                Login Console
+            </button>
+            <p id="pinError" class="text-xs text-red-400 font-bold hidden">चुकलेला PIN! (Default: 5678)</p>
+        </div>
+    </div>
+
+    <!-- 📌 2. MAIN DRIVER CONTENT (Initially Hidden) -->
+    <div id="driverContent" class="hidden flex-1 flex flex-col justify-between w-full">
+        <!-- Header -->
+        <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-tower-broadcast text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-base">BusMitra Driver</h1>
+                    <p class="text-[10px] text-slate-400 font-bold">GPS Live Location Console</p>
+                </div>
+            </div>
+            <span id="statusBadge" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-lg border border-amber-500/30">
+                OFFLINE
+            </span>
+        </div>
+
+        <!-- Main Control Panel -->
+        <div class="bg-slate-800 p-5 rounded-3xl border border-slate-700 space-y-5 my-auto">
+            <div>
+                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">आपली बस निवडा (Select Bus)</label>
+                <select id="busSelect" class="w-full p-3.5 bg-slate-900 border border-slate-700 rounded-2xl font-bold text-sm text-white focus:outline-none focus:border-red-500">
+                    <option value="">बसेस लोड होत आहेत...</option>
+                </select>
+            </div>
+
+            <!-- Coordinates Status -->
+            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Latitude:</span>
+                    <span id="latVal" class="text-slate-200 font-bold">--.--</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Longitude:</span>
+                    <span id="lngVal" class="text-slate-200 font-bold">--.--</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-800 pt-2 text-[10px]">
+                    <span class="text-slate-500">Last Update:</span>
+                    <span id="timeVal" class="text-emerald-400 font-bold">--</span>
+                </div>
+            </div>
+
+            <!-- Start/Stop Button -->
+            <button id="toggleBtn" onclick="toggleTracking()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-play"></i>
+                <span>ट्रिप सुरू करा (Start Trip)</span>
+            </button>
+        </div>
+
+        <!-- Info Footer -->
+        <p class="text-center text-slate-500 text-[11px] font-bold py-2">
+            चालू ट्रिपदरम्यान लोकेशन नेहमी ऑन ठेवा 📡
+        </p>
+    </div>
+
+    <script>
+        const DRIVER_PIN = "5678"; // 🔑 ड्रायव्हरचा पासवर्ड
+
+        function verifyDriverPin() {
+            const input = document.getElementById('driverPinInput').value;
+            const err = document.getElementById('pinError');
+            if (input === DRIVER_PIN) {
+                document.getElementById('pinModal').classList.add('hidden');
+                document.getElementById('driverContent').classList.remove('hidden');
+                loadBusesForDriver();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        const SUPABASE_URL = 'https://ogdzoewuvnwnywqueijl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nZHpvZXd1dm53bnl3cXVlaWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NDY3NjMsImV4cCI6MjEwMDEyMjc2M30.q11SVL1BWJ72k4M-ujp3wPqP6s369RQTnjjD8vcZNNU';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let watchId = null;
+        let isTracking = false;
+
+        async function loadBusesForDriver() {
+            const select = document.getElementById('busSelect');
+            const { data: buses, error } = await _supabase.from('buses').select('*');
+            if (error || !buses || buses.length === 0) {
+                select.innerHTML = '<option value="">कोणतीही बस उपलब्ध नाही</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">-- बस निवडा --</option>' + 
+                buses.map(b => `<option value="${b.id}">${b.bus_number} (${b.from_city} ➔ ${b.to_city})</option>`).join('');
+        }
+
+        function toggleTracking() {
+            const busId = document.getElementById('busSelect').value;
+            if (!busId) {
+                alert('कृपया आधी बस सिलेक्ट करा!');
+                return;
+            }
+            if (!isTracking) {
+                if ('geolocation' in navigator) {
+                    watchId = navigator.geolocation.watchPosition(
+                        (position) => updateLocation(position, busId),
+                        (error) => alert('GPS Error: ' + error.message),
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                    );
+                    isTracking = true;
+                    updateUI(true);
+                } else alert('तुमच्या फोनमध्ये GPS सपोर्ट नाही.');
+            } else {
+                navigator.geolocation.clearWatch(watchId);
+                isTracking = false;
+                updateUI(false);
+            }
+        }
+
+        async function updateLocation(position, busId) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById('latVal').innerText = lat.toFixed(6);
+            document.getElementById('lngVal').innerText = lng.toFixed(6);
+            document.getElementById('timeVal').innerText = new Date().toLocaleTimeString();
+            await _supabase.from('buses').update({ lat: lat, lng: lng }).eq('id', busId);
+        }
+
+        function updateUI(active) {
+            const badge = document.getElementById('statusBadge');
+            const btn = document.getElementById('toggleBtn');
+            const select = document.getElementById('busSelect');
+            if (active) {
+                badge.innerText = 'LIVE TRACKING';
+                badge.className = 'px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/30 animate-pulse';
+                btn.innerHTML = '<i class="fas fa-square"></i><span>ट्रिप थांबवा (Stop Trip)</span>';
+                btn.className = 'w-full py-4 bg-red-600 text-white font-black text-base rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2';
+                select.disabled = true;
+            } else {
+                badge.innerText = 'OFFLINE';
+                badge.className = 'px-2.5 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-lg border border-amber-500/30';
+                btn.innerHTML = '<i class="fas fa-play"></i><span>ट्रिप सुरू करा (Start Trip)</span>';
+                btn.className = 'w-full py-4 bg-emerald-600 text-white font-black text-base rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2';
+                select.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
